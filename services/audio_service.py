@@ -1,7 +1,6 @@
 import re
 
-
-AUDIO_FILE_PREFIX = "jeeng"
+from .config_service import get_audio_prefix
 
 
 def normalize_word(word):
@@ -29,7 +28,12 @@ def build_audio_filename(word):
     if not safe_word:
         return None
 
-    return f"{AUDIO_FILE_PREFIX}_{safe_word}.mp3"
+    audio_prefix = sanitize_filename_part(get_audio_prefix())
+
+    if not audio_prefix:
+        audio_prefix = "audio"
+
+    return f"{audio_prefix}_{safe_word}.mp3"
 
 
 def build_sound_tag(filename):

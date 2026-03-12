@@ -1,0 +1,12 @@
+{
+  "note_type_name": "JeEng",
+  "fields": {
+    "english": "English",
+    "russian": "Russian",
+    "ipa": "IPA",
+    "example": "Example",
+    "english_audio": "EnglishAudio"
+  },
+  "example_count": 3,
+  "audio_prefix": "jeeng"
+}
