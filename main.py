@@ -22,6 +22,8 @@ def on_menu_click() -> None:
         f"Updated: {result['updated']}\n"
         f"Skipped: {result['skipped']}\n"
         f"IPA updated: {result['ipa_updated']}\n"
+        f"Example updated: {result['example_updated']}\n"
+        f"Audio updated: {result['audio_updated']}\n"
         f"Errors: {result['errors']}"
     )
 
