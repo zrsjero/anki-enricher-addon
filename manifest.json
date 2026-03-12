@@ -1,0 +1,11 @@
+{
+  "package": "anki_enricher_addon",
+  "name": "English Note Enricher",
+  "mod": 0,
+  "author": "Zrs",
+  "version": "0.1.0",
+  "homepage": "",
+  "conflicts": [],
+  "min_point_version": 50,
+  "max_point_version": 99
+}
