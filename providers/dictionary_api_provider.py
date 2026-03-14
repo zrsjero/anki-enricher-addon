@@ -1,3 +1,5 @@
+"""Low-level client for Free Dictionary API."""
+
 from urllib.parse import quote
 
 import requests
@@ -6,10 +8,12 @@ BASE_URL = "https://api.dictionaryapi.dev/api/v2/entries/en"
 
 
 def normalize_word(word):
+    """Trim user-provided word before URL generation."""
     return word.strip()
 
 
 def build_dictionary_url(word):
+    """Build API URL for a specific English word."""
     normalized_word = normalize_word(word)
 
     if not normalized_word:
@@ -20,6 +24,7 @@ def build_dictionary_url(word):
 
 
 def fetch_dictionary_entries(word):
+    """Fetch dictionary entries and return a validated list payload."""
     url = build_dictionary_url(word)
 
     if not url:

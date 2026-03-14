@@ -1,3 +1,5 @@
+"""Example sentence extraction and formatting service."""
+
 import logging
 import sys
 
@@ -14,14 +16,17 @@ logger = logging.getLogger(__name__)
 
 
 def normalize_word(word):
+    """Trim user-provided word before API lookup."""
     return word.strip()
 
 
 def clean_example_text(text):
+    """Normalize spacing in a sentence while keeping content intact."""
     return " ".join(text.strip().split())
 
 
 def extract_examples_from_entry(entry):
+    """Collect example sentences from a single dictionary API entry."""
     collected_examples = []
 
     meanings = entry.get("meanings", [])
@@ -57,6 +62,7 @@ def extract_examples_from_entry(entry):
 
 
 def get_examples_for_word(word):
+    """Return unique examples for a word, capped by config example_count."""
     normalized_word = normalize_word(word)
 
     if not normalized_word:
@@ -87,4 +93,5 @@ def get_examples_for_word(word):
 
 
 def format_examples(examples):
+    """Format examples as a newline-separated block for Anki field."""
     return "\n".join(examples)

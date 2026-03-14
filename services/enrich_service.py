@@ -1,3 +1,5 @@
+"""Orchestrates note enrichment flow for IPA, examples, and audio."""
+
 from .config_service import get_field_name
 from .note_service import (
     get_note_ids,
@@ -19,6 +21,7 @@ from .media_service import media_file_exists, write_media_file
 
 
 def process_note(note):
+    """Enrich a single note and return per-note processing statistics."""
     english_field_name = get_field_name("english")
     ipa_field_name = get_field_name("ipa")
     example_field_name = get_field_name("example")
@@ -100,6 +103,7 @@ def process_note(note):
 
 
 def enrich_notes():
+    """Run enrichment for all configured notes and return summary stats."""
     note_ids = get_note_ids()
 
     if not note_ids:

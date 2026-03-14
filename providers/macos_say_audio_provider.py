@@ -1,3 +1,5 @@
+"""macOS `say` audio provider that returns generated AIFF bytes."""
+
 import shutil
 import subprocess
 import tempfile
@@ -5,10 +7,12 @@ from pathlib import Path
 
 
 def normalize_text(text):
+    """Trim text before speech synthesis."""
     return text.strip()
 
 
 def generate_audio_data_with_say(text):
+    """Generate AIFF audio bytes using a native macOS `say` command."""
     normalized_text = normalize_text(text)
 
     if not normalized_text:

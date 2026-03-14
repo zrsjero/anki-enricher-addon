@@ -1,3 +1,5 @@
+"""Audio naming and generation service with backend abstraction."""
+
 import re
 
 from .config_service import get_audio_prefix, get_audio_backend
@@ -5,10 +7,12 @@ from ..providers.macos_say_audio_provider import generate_audio_data_with_say
 
 
 def normalize_word(word):
+    """Trim and lowercase source text used for filenames and synthesis."""
     return word.strip().lower()
 
 
 def sanitize_filename_part(text):
+    """Convert text to a filesystem-safe token."""
     sanitized = text.strip().lower()
     sanitized = sanitized.replace(" ", "_")
     sanitized = re.sub(r"[^a-z0-9_-]", "", sanitized)
@@ -19,6 +23,7 @@ def sanitize_filename_part(text):
 
 
 def get_audio_extension():
+    """Return file extension expected from the current audio backend."""
     backend = get_audio_backend()
 
     if backend == "macos_say":
@@ -28,6 +33,7 @@ def get_audio_extension():
 
 
 def build_audio_filename(word):
+    """Build deterministic media filename for a word."""
     normalized_word = normalize_word(word)
 
     if not normalized_word:
@@ -48,6 +54,7 @@ def build_audio_filename(word):
 
 
 def build_sound_tag(filename):
+    """Build Anki sound tag for a media filename."""
     if not filename:
         return None
 
@@ -55,6 +62,7 @@ def build_sound_tag(filename):
 
 
 def generate_audio_data(word):
+    """Generate raw audio bytes for a word via configured backend."""
     normalized_word = normalize_word(word)
 
     if not normalized_word:

@@ -1,11 +1,15 @@
+"""IPA extraction service based on Free Dictionary API payloads."""
+
 from ..providers.dictionary_api_provider import fetch_dictionary_entries
 
 
 def normalize_word(word):
+    """Trim user-provided word before API lookup."""
     return word.strip()
 
 
 def normalize_ipa_text(text):
+    """Trim IPA and normalize it to slash-wrapped notation."""
     cleaned_text = text.strip()
 
     if not cleaned_text:
@@ -18,6 +22,7 @@ def normalize_ipa_text(text):
 
 
 def extract_ipa_from_entry(entry):
+    """Extract first usable IPA transcription from one API entry."""
     phonetic = entry.get("phonetic")
 
     if isinstance(phonetic, str):
@@ -49,6 +54,7 @@ def extract_ipa_from_entry(entry):
 
 
 def get_ipa_for_word(word):
+    """Fetch dictionary entries and return first available IPA value."""
     normalized_word = normalize_word(word)
 
     if not normalized_word:

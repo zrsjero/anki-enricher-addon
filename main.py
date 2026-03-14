@@ -1,3 +1,5 @@
+"""Anki add-on entrypoint and UI menu registration."""
+
 from aqt import mw
 from aqt.qt import QAction
 from aqt.utils import showInfo
@@ -6,6 +8,7 @@ from .services.enrich_service import enrich_notes
 
 
 def on_menu_click() -> None:
+    """Run note enrichment and show a human-readable summary dialog."""
     result = enrich_notes()
 
     if result["status"] == "no_notes":
@@ -29,6 +32,7 @@ def on_menu_click() -> None:
 
 
 def init_addon() -> None:
+    """Register the add-on action in Anki Tools menu."""
     action = QAction("English Note Enricher", mw)
     action.triggered.connect(on_menu_click)
     mw.form.menuTools.addAction(action)
