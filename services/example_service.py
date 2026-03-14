@@ -1,10 +1,15 @@
 """Example sentence extraction and formatting service."""
 
 import logging
-import sys
+import html
 import re
+import sys
 
-from .config_service import get_example_count, get_example_backend
+from .config_service import (
+    get_example_count,
+    get_example_backend,
+    get_ollama_max_attempts_per_word,
+)
 from ..providers.dictionary_api_provider import fetch_dictionary_entries
 from ..providers.ollama_provider import generate_examples_with_ollama
 
@@ -34,7 +39,12 @@ def count_words(text):
 
 def contains_target_word_once(sentence, target_word):
     """Check that target word appears exactly once as a standalone token."""
-    pattern = rf"\b{re.escape(target_word.lower())}\b"
+    normalized_target = target_word.strip().lower()
+
+    if not normalized_target:
+        return False
+
+    pattern = rf"(?<!\w){re.escape(normalized_target)}(?!\w)"
     matches = re.findall(pattern, sentence.lower())
     return len(matches) == 1
 
@@ -73,6 +83,44 @@ def dedupe_examples(examples):
         deduped.append(example)
 
     return deduped
+
+
+def extend_with_ollama(existing_examples, target_word, target_count):
+    """Try to reach target count using multiple Ollama generation attempts."""
+    if len(existing_examples) >= target_count:
+        return existing_examples[:target_count]
+
+    enriched = list(existing_examples)
+    max_attempts = max(1, int(get_ollama_max_attempts_per_word()))
+
+    for _ in range(max_attempts):
+        missing_count = target_count - len(enriched)
+
+        if missing_count <= 0:
+            break
+
+        # Ask for more candidates than needed to compensate for filtering.
+        requested_count = min(max(missing_count * 3, 3), 12)
+        generated_examples = generate_examples_with_ollama(
+            word=target_word,
+            count=requested_count,
+        )
+
+        if not generated_examples:
+            continue
+
+        for example in generated_examples:
+            cleaned_example = clean_example_text(example)
+
+            if is_quality_example(cleaned_example, target_word):
+                enriched.append(cleaned_example)
+
+        enriched = dedupe_examples(enriched)
+
+        if len(enriched) >= target_count:
+            break
+
+    return enriched[:target_count]
 
 
 def extract_examples_from_entry(entry):
@@ -137,26 +185,16 @@ def get_examples_for_word(word):
     logger.info(f"all_examples: {all_examples}")
 
     if len(all_examples) < example_count and get_example_backend() == "dictionary_then_ollama":
-        missing_count = example_count - len(all_examples)
-        generated_examples = generate_examples_with_ollama(
-            word=normalized_word,
-            count=missing_count,
+        all_examples = extend_with_ollama(
+            existing_examples=all_examples,
+            target_word=normalized_word,
+            target_count=example_count,
         )
-
-        filtered_generated_examples = []
-
-        for example in generated_examples:
-            cleaned_example = clean_example_text(example)
-
-            if is_quality_example(cleaned_example, normalized_word):
-                filtered_generated_examples.append(cleaned_example)
-
-        all_examples.extend(filtered_generated_examples)
-        all_examples = dedupe_examples(all_examples)
 
     return all_examples[:example_count]
 
 
 def format_examples(examples):
-    """Format examples as a newline-separated block for Anki field."""
-    return "\n".join(examples)
+    """Format examples as an HTML line-break separated block for Anki field."""
+    escaped_examples = [html.escape(example) for example in examples]
+    return "<br>".join(escaped_examples)

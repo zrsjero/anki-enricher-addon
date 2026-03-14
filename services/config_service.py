@@ -79,6 +79,12 @@ def get_ollama_temperature():
     return ollama_config.get("temperature", 0.6)
 
 
+def get_ollama_max_attempts_per_word():
+    """Return max Ollama requests per word for example generation."""
+    ollama_config = get_ollama_config()
+    return ollama_config.get("max_attempts_per_word", 4)
+
+
 def get_audio_prefix():
     """Return filename prefix for generated audio files."""
     config = get_addon_config()

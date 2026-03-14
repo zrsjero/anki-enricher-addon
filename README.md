@@ -87,7 +87,8 @@ Config lives in `config.json`:
     "base_url": "http://127.0.0.1:11434",
     "model": "qwen2.5:3b-instruct",
     "timeout_seconds": 25,
-    "temperature": 0.6
+    "temperature": 0.6,
+    "max_attempts_per_word": 4
   },
   "audio_prefix": "jeeng",
   "audio_backend": "macos_say"
@@ -105,6 +106,7 @@ Config lives in `config.json`:
 - `ollama.model`: local model name available in Ollama
 - `ollama.timeout_seconds`: request timeout for local generation
 - `ollama.temperature`: generation randomness
+- `ollama.max_attempts_per_word`: max number of Ollama requests per word
 - `audio_prefix`: prefix in generated audio filenames
 - `audio_backend`: currently supports `macos_say`
 
