@@ -19,7 +19,9 @@ As of **March 14, 2026**, the add-on has a working end-to-end pipeline with:
 ## Features
 
 - Adds menu action: `Tools -> English Note Enricher`
-- Shows deck picker on run (selected deck or all decks)
+- Shows one run dialog with:
+  - deck selection (selected deck or all decks)
+  - source selection for `Definition` and `Example` (`dictionaryapi` or `Ollama`)
 - Targets one note type from config (`note_type_name`)
 - Verifies required fields exist in the model before processing
 - Updates only empty target fields
@@ -116,8 +118,8 @@ Config lives in `config.json`:
 - `note_type_name`: name of target note type
 - `fields`: mapping from logical keys to actual note field names
 - `example_count`: max examples to save in `Example`
-- `definition_backend`: definition strategy (`dictionary_then_ollama` supported)
-- `example_backend`: example strategy (`dictionary_then_ollama` supported)
+- `definition_backend`: definition strategy (`dictionary_then_ollama` or `ollama_only`)
+- `example_backend`: example strategy (`dictionary_then_ollama` or `ollama_only`)
 - `normalize_source_first_char_lowercase`: lowercases first character in `English` and `Russian` for notes being enriched
 - `ollama.enabled`: enable/disable local Ollama fallback
 - `ollama.base_url`: local Ollama API URL (default `http://127.0.0.1:11434`)
@@ -191,6 +193,12 @@ anki_enricher_addon/
    - keep `"definition_backend": "dictionary_then_ollama"`
    - keep `"example_backend": "dictionary_then_ollama"`
 
+### Ollama-only mode (optional)
+
+To skip dictionary text quality and use only local LLM generation:
+- set `"definition_backend": "ollama_only"`
+- set `"example_backend": "ollama_only"`
+
 ## Runtime Prerequisites
 
 - Anki desktop with Python add-on support
@@ -204,7 +212,12 @@ anki_enricher_addon/
 1. Ensure your target note type exists and fields match config.
 2. Keep `English` populated for notes you want to enrich.
 3. Leave `IPA`, `Definition`, `Example`, `EnglishAudio` empty if you want auto-fill.
-4. Run `Tools -> English Note Enricher` and choose a deck (or `All decks`).
+4. Run `Tools -> English Note Enricher` and choose options in one dialog:
+   - deck (or `All decks`)
+   - text source for `Definition` and `Example`
+   - `dictionaryapi`: dictionary first, then Ollama fallback
+   - `Ollama`: Ollama only
+   - default selected option: `Ollama`
 5. Review summary popup.
 
 ## Troubleshooting

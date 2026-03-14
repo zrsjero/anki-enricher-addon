@@ -159,7 +159,7 @@ def extract_examples_from_entry(entry):
     return collected_examples
 
 
-def get_examples_for_word(word):
+def get_examples_for_word(word, backend_override=None):
     """Return unique examples for a word, capped by config example_count."""
     normalized_word = normalize_word(word)
 
@@ -169,6 +169,15 @@ def get_examples_for_word(word):
     example_count = get_example_count()
     if example_count <= 0:
         return []
+
+    example_backend = backend_override or get_example_backend()
+
+    if example_backend == "ollama_only":
+        return extend_with_ollama(
+            existing_examples=[],
+            target_word=normalized_word,
+            target_count=example_count,
+        )
 
     entries = fetch_dictionary_entries(normalized_word)
 
@@ -184,7 +193,7 @@ def get_examples_for_word(word):
     all_examples = dedupe_examples(all_examples)
     logger.info(f"all_examples: {all_examples}")
 
-    if len(all_examples) < example_count and get_example_backend() == "dictionary_then_ollama":
+    if len(all_examples) < example_count and example_backend == "dictionary_then_ollama":
         all_examples = extend_with_ollama(
             existing_examples=all_examples,
             target_word=normalized_word,

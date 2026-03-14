@@ -22,7 +22,7 @@ from .audio_service import (
 from .media_service import media_file_exists, write_media_file
 
 
-def process_note(note):
+def process_note(note, text_backend_mode=None):
     """Enrich a single note and return per-note processing statistics."""
     english_field_name = get_field_name("english")
     ipa_field_name = get_field_name("ipa")
@@ -78,7 +78,10 @@ def process_note(note):
             error_count += 1
 
     if definition_field_name in empty_target_fields:
-        definition = get_definition_for_word(english_value)
+        definition = get_definition_for_word(
+            english_value,
+            backend_override=text_backend_mode,
+        )
 
         if definition:
             formatted_definition = format_definition(definition)
@@ -89,7 +92,10 @@ def process_note(note):
             error_count += 1
 
     if example_field_name in empty_target_fields:
-        examples = get_examples_for_word(english_value)
+        examples = get_examples_for_word(
+            english_value,
+            backend_override=text_backend_mode,
+        )
 
         if examples:
             formatted_examples = format_examples(examples)
@@ -135,7 +141,7 @@ def process_note(note):
     }
 
 
-def enrich_notes(deck_name=None):
+def enrich_notes(deck_name=None, text_backend_mode=None):
     """Run enrichment for configured note type and optional deck."""
     note_ids = get_note_ids(deck_name=deck_name)
 
@@ -182,7 +188,10 @@ def enrich_notes(deck_name=None):
         processed_count += 1
 
         note = get_note(note_id)
-        note_result = process_note(note)
+        note_result = process_note(
+            note,
+            text_backend_mode=text_backend_mode,
+        )
 
         if note_result["skipped"]:
             skipped_count += 1

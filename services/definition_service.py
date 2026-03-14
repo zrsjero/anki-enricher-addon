@@ -108,19 +108,24 @@ def get_definition_from_ollama(word):
     return None
 
 
-def get_definition_for_word(word):
-    """Return single definition via dictionary, then optional Ollama fallback."""
+def get_definition_for_word(word, backend_override=None):
+    """Return one definition via selected backend strategy."""
     normalized_word = normalize_word(word)
 
     if not normalized_word:
         return None
+
+    definition_backend = backend_override or get_definition_backend()
+
+    if definition_backend == "ollama_only":
+        return get_definition_from_ollama(normalized_word)
 
     dictionary_definition = get_definition_from_dictionary(normalized_word)
 
     if dictionary_definition:
         return dictionary_definition
 
-    if get_definition_backend() == "dictionary_then_ollama":
+    if definition_backend == "dictionary_then_ollama":
         return get_definition_from_ollama(normalized_word)
 
     return None
