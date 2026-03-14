@@ -13,7 +13,7 @@ from .example_service import get_examples_for_word, format_examples
 from .audio_service import (
     build_audio_filename,
     build_sound_tag,
-    generate_test_audio_data,
+    generate_audio_data,
 )
 from .media_service import media_file_exists, write_media_file
 
@@ -70,7 +70,7 @@ def process_note(note):
 
         if filename and sound_tag:
             if not media_file_exists(filename):
-                audio_data = generate_test_audio_data(english_value)
+                audio_data = generate_audio_data(english_value)
 
                 if audio_data:
                     write_media_file(filename, audio_data)

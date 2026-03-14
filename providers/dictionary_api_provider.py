@@ -25,12 +25,18 @@ def fetch_dictionary_entries(word):
     if not url:
         return []
 
-    response = requests.get(url, timeout=10)
+    try:
+        response = requests.get(url, timeout=10)
+    except requests.RequestException:
+        return []
 
     if response.status_code != 200:
         return []
 
-    data = response.json()
+    try:
+        data = response.json()
+    except ValueError:
+        return []
 
     if not isinstance(data, list):
         return []

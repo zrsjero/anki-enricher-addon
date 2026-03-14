@@ -28,3 +28,8 @@ def get_example_count():
 def get_audio_prefix():
     config = get_addon_config()
     return config.get("audio_prefix", "jeeng")
+
+
+def get_audio_backend():
+    config = get_addon_config()
+    return config.get("audio_backend", "macos_say")

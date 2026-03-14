@@ -8,5 +8,6 @@
     "english_audio": "EnglishAudio"
   },
   "example_count": 3,
-  "audio_prefix": "jeeng"
+  "audio_prefix": "jeeng",
+  "audio_backend": "macos_say"
 }
