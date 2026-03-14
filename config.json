@@ -8,6 +8,14 @@
     "english_audio": "EnglishAudio"
   },
   "example_count": 3,
+  "example_backend": "dictionary_then_ollama",
+  "ollama": {
+    "enabled": true,
+    "base_url": "http://127.0.0.1:11434",
+    "model": "qwen2.5:3b-instruct",
+    "timeout_seconds": 25,
+    "temperature": 0.6
+  },
   "audio_prefix": "jeeng",
   "audio_backend": "macos_say"
 }

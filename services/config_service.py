@@ -32,6 +32,53 @@ def get_example_count():
     return config.get("example_count", 3)
 
 
+def get_example_backend():
+    """Return active example generation backend strategy."""
+    config = get_addon_config()
+    return config.get("example_backend", "dictionary_then_ollama")
+
+
+def get_ollama_config():
+    """Return raw Ollama-related config section."""
+    config = get_addon_config()
+    ollama_config = config.get("ollama", {})
+
+    if not isinstance(ollama_config, dict):
+        return {}
+
+    return ollama_config
+
+
+def is_ollama_enabled():
+    """Return whether Ollama fallback is enabled in config."""
+    ollama_config = get_ollama_config()
+    return bool(ollama_config.get("enabled", False))
+
+
+def get_ollama_base_url():
+    """Return Ollama API base URL."""
+    ollama_config = get_ollama_config()
+    return ollama_config.get("base_url", "http://127.0.0.1:11434")
+
+
+def get_ollama_model():
+    """Return Ollama model identifier."""
+    ollama_config = get_ollama_config()
+    return ollama_config.get("model", "qwen2.5:3b-instruct")
+
+
+def get_ollama_timeout_seconds():
+    """Return Ollama request timeout in seconds."""
+    ollama_config = get_ollama_config()
+    return ollama_config.get("timeout_seconds", 25)
+
+
+def get_ollama_temperature():
+    """Return Ollama sampling temperature."""
+    ollama_config = get_ollama_config()
+    return ollama_config.get("temperature", 0.6)
+
+
 def get_audio_prefix():
     """Return filename prefix for generated audio files."""
     config = get_addon_config()

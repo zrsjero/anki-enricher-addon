@@ -12,7 +12,7 @@ The add-on is designed for a focused workflow:
 
 As of **March 14, 2026**, the add-on has a working end-to-end pipeline with:
 - IPA from Free Dictionary API;
-- examples from Free Dictionary API;
+- examples from Free Dictionary API with optional local Ollama fallback;
 - audio generated via native macOS `say` command and stored as `.aiff`.
 
 ## Features
@@ -49,12 +49,14 @@ By default it enriches only these target fields when empty:
 
 ### Examples
 
-- Source: Free Dictionary API meanings/definitions
+- Primary source: Free Dictionary API meanings/definitions
 - Extracts `definition["example"]`
 - Cleans whitespace
 - De-duplicates case-insensitively
 - Limits count by config (`example_count`)
 - Stores output as newline-separated text
+- Optional fallback source: local Ollama model
+- Applies quality checks for generated examples (word presence, length, simple punctuation limits)
 
 ### Audio
 
@@ -79,6 +81,14 @@ Config lives in `config.json`:
     "english_audio": "EnglishAudio"
   },
   "example_count": 3,
+  "example_backend": "dictionary_then_ollama",
+  "ollama": {
+    "enabled": false,
+    "base_url": "http://127.0.0.1:11434",
+    "model": "qwen2.5:3b-instruct",
+    "timeout_seconds": 25,
+    "temperature": 0.6
+  },
   "audio_prefix": "jeeng",
   "audio_backend": "macos_say"
 }
@@ -89,6 +99,12 @@ Config lives in `config.json`:
 - `note_type_name`: name of target note type
 - `fields`: mapping from logical keys to actual note field names
 - `example_count`: max examples to save in `Example`
+- `example_backend`: example strategy (`dictionary_then_ollama` supported)
+- `ollama.enabled`: enable/disable local Ollama fallback
+- `ollama.base_url`: local Ollama API URL (default `http://127.0.0.1:11434`)
+- `ollama.model`: local model name available in Ollama
+- `ollama.timeout_seconds`: request timeout for local generation
+- `ollama.temperature`: generation randomness
 - `audio_prefix`: prefix in generated audio filenames
 - `audio_backend`: currently supports `macos_say`
 
@@ -113,6 +129,7 @@ anki_enricher_addon/
 
   providers/
     dictionary_api_provider.py
+    ollama_provider.py
     macos_say_audio_provider.py
 ```
 
@@ -127,6 +144,7 @@ anki_enricher_addon/
 - `services/audio_service.py`: filename policy + backend routing
 - `services/media_service.py`: media path and file writes
 - `providers/dictionary_api_provider.py`: HTTP client for dictionary API
+- `providers/ollama_provider.py`: local Ollama text-generation client
 - `providers/macos_say_audio_provider.py`: macOS speech synthesis provider
 
 ## Installation
@@ -136,12 +154,27 @@ anki_enricher_addon/
 3. Restart Anki.
 4. In Anki, use `Tools -> English Note Enricher`.
 
+### Optional: Ollama setup on macOS
+
+1. Install Ollama:
+   - with Homebrew: `brew install --cask ollama`
+   - or download from `https://ollama.com/download`
+2. Start Ollama app once, or run service from terminal.
+3. Pull a lightweight model:
+   - `ollama pull qwen2.5:3b-instruct`
+4. Verify local API:
+   - `curl http://127.0.0.1:11434/api/tags`
+5. Enable fallback in `config.json`:
+   - set `"ollama.enabled": true`
+   - keep `"example_backend": "dictionary_then_ollama"`
+
 ## Runtime Prerequisites
 
 - Anki desktop with Python add-on support
 - `requests` module available in Anki Python environment
 - macOS for `macos_say` backend (`say` must be available in PATH)
 - internet access for dictionary API requests
+- optional local Ollama runtime for offline example fallback
 
 ## Usage
 
@@ -162,6 +195,7 @@ anki_enricher_addon/
 
 - Dictionary API has no data for the word.
 - Network issue or API non-200 response.
+- If `ollama.enabled=true`, ensure Ollama is running and the configured model is pulled.
 
 ### Audio not generated
 
@@ -185,6 +219,7 @@ anki_enricher_addon/
 - Audio format is `.aiff` (larger than compressed formats)
 - No retries/backoff for external API requests
 - Logging is minimal and mostly service-level
+- Ollama fallback quality depends on selected local model
 
 ## Development Roadmap
 
