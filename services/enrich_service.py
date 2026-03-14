@@ -13,6 +13,7 @@ from .note_service import (
 from .ipa_service import get_ipa_for_word
 from .definition_service import get_definition_for_word, format_definition
 from .example_service import get_examples_for_word, format_examples
+from .source_fields_case_service import normalize_source_fields_for_note
 from .audio_service import (
     build_audio_filename,
     build_sound_tag,
@@ -43,12 +44,28 @@ def process_note(note):
         }
 
     empty_target_fields = get_empty_target_fields(note)
+
+    if not empty_target_fields:
+        return {
+            "skipped": True,
+            "updated": False,
+            "ipa_updated": 0,
+            "definition_updated": 0,
+            "example_updated": 0,
+            "audio_updated": 0,
+            "errors": 0,
+        }
+
     was_updated = False
     ipa_updated_count = 0
     definition_updated_count = 0
     example_updated_count = 0
     audio_updated_count = 0
     error_count = 0
+
+    if normalize_source_fields_for_note(note):
+        english_value = get_field_value(note, english_field_name)
+        was_updated = True
 
     if ipa_field_name in empty_target_fields:
         ipa_value = get_ipa_for_word(english_value)

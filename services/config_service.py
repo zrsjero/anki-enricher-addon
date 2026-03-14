@@ -44,6 +44,12 @@ def get_definition_backend():
     return config.get("definition_backend", "dictionary_then_ollama")
 
 
+def is_source_first_char_lowercase_enabled():
+    """Return whether english/russian first-char lowercase normalization is enabled."""
+    config = get_addon_config()
+    return bool(config.get("normalize_source_first_char_lowercase", False))
+
+
 def get_ollama_config():
     """Return raw Ollama-related config section."""
     config = get_addon_config()

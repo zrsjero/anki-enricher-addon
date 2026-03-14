@@ -34,14 +34,35 @@ def escape_search_value(value):
     return value.replace('"', '\\"')
 
 
+def build_empty_field_term(field_name):
+    """Build Anki search term for an empty field."""
+    escaped_field_name = (
+        field_name
+        .replace("\\", "\\\\")
+        .replace(" ", "\\ ")
+        .replace(":", "\\:")
+    )
+    return f"{escaped_field_name}:"
+
+
 def build_note_search_query(deck_name=None):
-    """Build note search query by note type and optional deck."""
+    """Build note search query by note type, optional deck, and empty targets."""
     note_type_name = escape_search_value(get_note_type_name())
     query = f'note:"{note_type_name}"'
 
     if deck_name:
         escaped_deck_name = escape_search_value(deck_name)
         query += f' deck:"{escaped_deck_name}"'
+
+    target_field_names = get_target_field_names()
+    empty_terms = []
+
+    for field_name in target_field_names:
+        empty_terms.append(build_empty_field_term(field_name))
+
+    if empty_terms:
+        empty_targets_query = " or ".join(empty_terms)
+        query += f" ({empty_targets_query})"
 
     return query
 

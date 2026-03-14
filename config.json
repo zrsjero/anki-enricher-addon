@@ -11,6 +11,7 @@
   "example_count": 2,
   "definition_backend": "dictionary_then_ollama",
   "example_backend": "dictionary_then_ollama",
+  "normalize_source_first_char_lowercase": true,
   "ollama": {
     "enabled": true,
     "base_url": "http://127.0.0.1:11434",

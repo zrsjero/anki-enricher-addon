@@ -23,6 +23,7 @@ As of **March 14, 2026**, the add-on has a working end-to-end pipeline with:
 - Targets one note type from config (`note_type_name`)
 - Verifies required fields exist in the model before processing
 - Updates only empty target fields
+- Optional lowercasing of first character in `English` and `Russian`
 - Generates deterministic audio filenames
 - Writes audio files into Anki media folder
 - Produces run summary in a popup dialog
@@ -96,6 +97,7 @@ Config lives in `config.json`:
   "example_count": 3,
   "definition_backend": "dictionary_then_ollama",
   "example_backend": "dictionary_then_ollama",
+  "normalize_source_first_char_lowercase": false,
   "ollama": {
     "enabled": false,
     "base_url": "http://127.0.0.1:11434",
@@ -116,6 +118,7 @@ Config lives in `config.json`:
 - `example_count`: max examples to save in `Example`
 - `definition_backend`: definition strategy (`dictionary_then_ollama` supported)
 - `example_backend`: example strategy (`dictionary_then_ollama` supported)
+- `normalize_source_first_char_lowercase`: lowercases first character in `English` and `Russian` for notes being enriched
 - `ollama.enabled`: enable/disable local Ollama fallback
 - `ollama.base_url`: local Ollama API URL (default `http://127.0.0.1:11434`)
 - `ollama.model`: local model name available in Ollama
@@ -224,7 +227,7 @@ anki_enricher_addon/
 
 ### Add-on loads but does nothing
 
-- No notes match configured `note_type_name`.
+- No notes with empty target fields match configured `note_type_name` and selected deck.
 
 ## Design Decisions
 
