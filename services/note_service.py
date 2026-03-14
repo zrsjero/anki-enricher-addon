@@ -8,6 +8,7 @@ from .config_service import get_note_type_name, get_field_names
 FIELD_KEY_ENGLISH = "english"
 FIELD_KEY_RUSSIAN = "russian"
 FIELD_KEY_IPA = "ipa"
+FIELD_KEY_DEFINITION = "definition"
 FIELD_KEY_EXAMPLE = "example"
 FIELD_KEY_ENGLISH_AUDIO = "english_audio"
 
@@ -15,12 +16,14 @@ REQUIRED_FIELD_KEYS = [
     FIELD_KEY_ENGLISH,
     FIELD_KEY_RUSSIAN,
     FIELD_KEY_IPA,
+    FIELD_KEY_DEFINITION,
     FIELD_KEY_EXAMPLE,
     FIELD_KEY_ENGLISH_AUDIO,
 ]
 
 TARGET_FIELD_KEYS = [
     FIELD_KEY_IPA,
+    FIELD_KEY_DEFINITION,
     FIELD_KEY_EXAMPLE,
     FIELD_KEY_ENGLISH_AUDIO,
 ]

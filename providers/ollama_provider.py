@@ -40,6 +40,19 @@ def build_prompt(word, count):
     )
 
 
+def build_definition_prompt(word):
+    """Build deterministic prompt for definition generation."""
+    return (
+        "You are helping to create flashcards for English learners.\n"
+        f"Write one short English definition for the word: {word}\n"
+        "Rules:\n"
+        "- Keep it to one sentence.\n"
+        "- Use simple CEFR A2-B1 vocabulary.\n"
+        "- Do not use markdown.\n"
+        '- Return strict JSON only: {"definition":"..."}\n'
+    )
+
+
 def parse_ollama_examples(response_text):
     """Extract examples list from Ollama textual response."""
     try:
@@ -62,6 +75,26 @@ def parse_ollama_examples(response_text):
                 valid_examples.append(cleaned)
 
     return valid_examples
+
+
+def parse_ollama_definition(response_text):
+    """Extract single definition string from Ollama textual response."""
+    try:
+        payload = json.loads(response_text)
+    except ValueError:
+        return None
+
+    definition = payload.get("definition")
+
+    if not isinstance(definition, str):
+        return None
+
+    cleaned_definition = definition.strip()
+
+    if not cleaned_definition:
+        return None
+
+    return cleaned_definition
 
 
 def generate_examples_with_ollama(word, count):
@@ -108,3 +141,49 @@ def generate_examples_with_ollama(word, count):
         return []
 
     return parse_ollama_examples(raw_response)
+
+
+def generate_definition_with_ollama(word):
+    """Generate a single definition with local Ollama."""
+    if not is_ollama_enabled():
+        return None
+
+    if not word:
+        return None
+
+    url = build_ollama_generate_url()
+
+    if not url:
+        return None
+
+    payload = {
+        "model": get_ollama_model(),
+        "prompt": build_definition_prompt(word=word),
+        "stream": False,
+        "format": "json",
+        "options": {
+            "temperature": get_ollama_temperature(),
+        },
+    }
+
+    timeout_seconds = get_ollama_timeout_seconds()
+
+    try:
+        response = requests.post(url, json=payload, timeout=timeout_seconds)
+    except requests.RequestException:
+        return None
+
+    if response.status_code != 200:
+        return None
+
+    try:
+        data = response.json()
+    except ValueError:
+        return None
+
+    raw_response = data.get("response")
+
+    if not isinstance(raw_response, str):
+        return None
+
+    return parse_ollama_definition(raw_response)

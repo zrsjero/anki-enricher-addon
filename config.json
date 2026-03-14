@@ -4,10 +4,12 @@
     "english": "English",
     "russian": "Russian",
     "ipa": "IPA",
+    "definition": "Definition",
     "example": "Example",
     "english_audio": "EnglishAudio"
   },
-  "example_count": 3,
+  "example_count": 2,
+  "definition_backend": "dictionary_then_ollama",
   "example_backend": "dictionary_then_ollama",
   "ollama": {
     "enabled": true,

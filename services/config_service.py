@@ -38,6 +38,12 @@ def get_example_backend():
     return config.get("example_backend", "dictionary_then_ollama")
 
 
+def get_definition_backend():
+    """Return active definition generation backend strategy."""
+    config = get_addon_config()
+    return config.get("definition_backend", "dictionary_then_ollama")
+
+
 def get_ollama_config():
     """Return raw Ollama-related config section."""
     config = get_addon_config()

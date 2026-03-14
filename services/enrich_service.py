@@ -1,4 +1,4 @@
-"""Orchestrates note enrichment flow for IPA, examples, and audio."""
+"""Orchestrates note enrichment flow for IPA, definition, examples, and audio."""
 
 from .config_service import get_field_name
 from .note_service import (
@@ -11,6 +11,7 @@ from .note_service import (
     save_note,
 )
 from .ipa_service import get_ipa_for_word
+from .definition_service import get_definition_for_word, format_definition
 from .example_service import get_examples_for_word, format_examples
 from .audio_service import (
     build_audio_filename,
@@ -24,6 +25,7 @@ def process_note(note):
     """Enrich a single note and return per-note processing statistics."""
     english_field_name = get_field_name("english")
     ipa_field_name = get_field_name("ipa")
+    definition_field_name = get_field_name("definition")
     example_field_name = get_field_name("example")
     english_audio_field_name = get_field_name("english_audio")
 
@@ -34,6 +36,7 @@ def process_note(note):
             "skipped": True,
             "updated": False,
             "ipa_updated": 0,
+            "definition_updated": 0,
             "example_updated": 0,
             "audio_updated": 0,
             "errors": 0,
@@ -42,6 +45,7 @@ def process_note(note):
     empty_target_fields = get_empty_target_fields(note)
     was_updated = False
     ipa_updated_count = 0
+    definition_updated_count = 0
     example_updated_count = 0
     audio_updated_count = 0
     error_count = 0
@@ -53,6 +57,17 @@ def process_note(note):
             set_field_value(note, ipa_field_name, ipa_value)
             was_updated = True
             ipa_updated_count += 1
+        else:
+            error_count += 1
+
+    if definition_field_name in empty_target_fields:
+        definition = get_definition_for_word(english_value)
+
+        if definition:
+            formatted_definition = format_definition(definition)
+            set_field_value(note, definition_field_name, formatted_definition)
+            was_updated = True
+            definition_updated_count += 1
         else:
             error_count += 1
 
@@ -96,6 +111,7 @@ def process_note(note):
         "skipped": False,
         "updated": was_updated,
         "ipa_updated": ipa_updated_count,
+        "definition_updated": definition_updated_count,
         "example_updated": example_updated_count,
         "audio_updated": audio_updated_count,
         "errors": error_count,
@@ -113,6 +129,7 @@ def enrich_notes():
             "updated": 0,
             "skipped": 0,
             "ipa_updated": 0,
+            "definition_updated": 0,
             "example_updated": 0,
             "audio_updated": 0,
             "errors": 0,
@@ -129,6 +146,7 @@ def enrich_notes():
             "updated": 0,
             "skipped": 0,
             "ipa_updated": 0,
+            "definition_updated": 0,
             "example_updated": 0,
             "audio_updated": 0,
             "errors": 0,
@@ -138,6 +156,7 @@ def enrich_notes():
     updated_count = 0
     skipped_count = 0
     ipa_updated_count = 0
+    definition_updated_count = 0
     example_updated_count = 0
     audio_updated_count = 0
     error_count = 0
@@ -155,6 +174,7 @@ def enrich_notes():
             updated_count += 1
 
         ipa_updated_count += note_result["ipa_updated"]
+        definition_updated_count += note_result["definition_updated"]
         example_updated_count += note_result["example_updated"]
         audio_updated_count += note_result["audio_updated"]
         error_count += note_result["errors"]
@@ -165,6 +185,7 @@ def enrich_notes():
         "updated": updated_count,
         "skipped": skipped_count,
         "ipa_updated": ipa_updated_count,
+        "definition_updated": definition_updated_count,
         "example_updated": example_updated_count,
         "audio_updated": audio_updated_count,
         "errors": error_count,

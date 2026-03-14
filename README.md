@@ -4,7 +4,7 @@ Anki English Enricher is a Python add-on that enriches vocabulary notes by filli
 
 The add-on is designed for a focused workflow:
 - read notes of one configured note type;
-- fill missing IPA, example sentences, and audio;
+- fill missing IPA, definition, example sentences, and audio;
 - save generated media files to Anki `collection.media`;
 - display a summary of processed/updated/skipped/error counts.
 
@@ -12,6 +12,7 @@ The add-on is designed for a focused workflow:
 
 As of **March 14, 2026**, the add-on has a working end-to-end pipeline with:
 - IPA from Free Dictionary API;
+- definition from Free Dictionary API with optional local Ollama fallback;
 - examples from Free Dictionary API with optional local Ollama fallback;
 - audio generated via native macOS `say` command and stored as `.aiff`.
 
@@ -31,11 +32,13 @@ The add-on expects note fields:
 - `English`
 - `Russian`
 - `IPA`
+- `Definition`
 - `Example`
 - `EnglishAudio`
 
 By default it enriches only these target fields when empty:
 - `IPA`
+- `Definition`
 - `Example`
 - `EnglishAudio`
 
@@ -46,6 +49,14 @@ By default it enriches only these target fields when empty:
   1. `entry["phonetic"]` if present and valid
   2. first valid `phonetics[].text`
 - Normalization: ensures slash-wrapped format like `/wɜːd/`
+
+### Definition
+
+- Primary source: Free Dictionary API meanings/definitions
+- Extracts `definition["definition"]`
+- Returns one best value
+- Optional fallback source: local Ollama model
+- Applies lightweight quality checks for generated definition
 
 ### Examples
 
@@ -77,10 +88,12 @@ Config lives in `config.json`:
     "english": "English",
     "russian": "Russian",
     "ipa": "IPA",
+    "definition": "Definition",
     "example": "Example",
     "english_audio": "EnglishAudio"
   },
   "example_count": 3,
+  "definition_backend": "dictionary_then_ollama",
   "example_backend": "dictionary_then_ollama",
   "ollama": {
     "enabled": false,
@@ -100,6 +113,7 @@ Config lives in `config.json`:
 - `note_type_name`: name of target note type
 - `fields`: mapping from logical keys to actual note field names
 - `example_count`: max examples to save in `Example`
+- `definition_backend`: definition strategy (`dictionary_then_ollama` supported)
 - `example_backend`: example strategy (`dictionary_then_ollama` supported)
 - `ollama.enabled`: enable/disable local Ollama fallback
 - `ollama.base_url`: local Ollama API URL (default `http://127.0.0.1:11434`)
@@ -125,6 +139,7 @@ anki_enricher_addon/
     note_service.py
     enrich_service.py
     ipa_service.py
+    definition_service.py
     example_service.py
     audio_service.py
     media_service.py
@@ -142,6 +157,7 @@ anki_enricher_addon/
 - `services/note_service.py`: note queries and field-level operations
 - `services/enrich_service.py`: orchestration and run statistics
 - `services/ipa_service.py`: IPA extraction/normalization
+- `services/definition_service.py`: definition extraction/formatting
 - `services/example_service.py`: example extraction/formatting
 - `services/audio_service.py`: filename policy + backend routing
 - `services/media_service.py`: media path and file writes
@@ -168,6 +184,7 @@ anki_enricher_addon/
    - `curl http://127.0.0.1:11434/api/tags`
 5. Enable fallback in `config.json`:
    - set `"ollama.enabled": true`
+   - keep `"definition_backend": "dictionary_then_ollama"`
    - keep `"example_backend": "dictionary_then_ollama"`
 
 ## Runtime Prerequisites
@@ -176,13 +193,13 @@ anki_enricher_addon/
 - `requests` module available in Anki Python environment
 - macOS for `macos_say` backend (`say` must be available in PATH)
 - internet access for dictionary API requests
-- optional local Ollama runtime for offline example fallback
+- optional local Ollama runtime for offline definition/example fallback
 
 ## Usage
 
 1. Ensure your target note type exists and fields match config.
 2. Keep `English` populated for notes you want to enrich.
-3. Leave `IPA`, `Example`, `EnglishAudio` empty if you want auto-fill.
+3. Leave `IPA`, `Definition`, `Example`, `EnglishAudio` empty if you want auto-fill.
 4. Run `Tools -> English Note Enricher`.
 5. Review summary popup.
 
@@ -193,7 +210,7 @@ anki_enricher_addon/
 - Field names in config do not match note model fields.
 - Fix `config.json` mappings.
 
-### No IPA or examples found
+### No IPA/definition/examples found
 
 - Dictionary API has no data for the word.
 - Network issue or API non-200 response.
