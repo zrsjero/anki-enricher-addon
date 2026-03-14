@@ -19,6 +19,7 @@ As of **March 14, 2026**, the add-on has a working end-to-end pipeline with:
 ## Features
 
 - Adds menu action: `Tools -> English Note Enricher`
+- Shows deck picker on run (selected deck or all decks)
 - Targets one note type from config (`note_type_name`)
 - Verifies required fields exist in the model before processing
 - Updates only empty target fields
@@ -200,7 +201,7 @@ anki_enricher_addon/
 1. Ensure your target note type exists and fields match config.
 2. Keep `English` populated for notes you want to enrich.
 3. Leave `IPA`, `Definition`, `Example`, `EnglishAudio` empty if you want auto-fill.
-4. Run `Tools -> English Note Enricher`.
+4. Run `Tools -> English Note Enricher` and choose a deck (or `All decks`).
 5. Review summary popup.
 
 ## Troubleshooting

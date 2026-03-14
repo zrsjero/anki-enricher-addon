@@ -118,9 +118,9 @@ def process_note(note):
     }
 
 
-def enrich_notes():
-    """Run enrichment for all configured notes and return summary stats."""
-    note_ids = get_note_ids()
+def enrich_notes(deck_name=None):
+    """Run enrichment for configured note type and optional deck."""
+    note_ids = get_note_ids(deck_name=deck_name)
 
     if not note_ids:
         return {

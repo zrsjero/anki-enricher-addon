@@ -29,11 +29,63 @@ TARGET_FIELD_KEYS = [
 ]
 
 
-def get_note_ids():
-    """Return note IDs for the configured note type."""
-    note_type_name = get_note_type_name()
+def escape_search_value(value):
+    """Escape value for Anki search query phrase."""
+    return value.replace('"', '\\"')
+
+
+def build_note_search_query(deck_name=None):
+    """Build note search query by note type and optional deck."""
+    note_type_name = escape_search_value(get_note_type_name())
     query = f'note:"{note_type_name}"'
+
+    if deck_name:
+        escaped_deck_name = escape_search_value(deck_name)
+        query += f' deck:"{escaped_deck_name}"'
+
+    return query
+
+
+def get_note_ids(deck_name=None):
+    """Return note IDs for configured note type and optional deck."""
+    query = build_note_search_query(deck_name=deck_name)
     return mw.col.find_notes(query)
+
+
+def get_deck_names():
+    """Return sorted deck names from collection."""
+    decks = mw.col.decks
+
+    if hasattr(decks, "all_names"):
+        names = decks.all_names()
+        return sorted([name for name in names if isinstance(name, str)])
+
+    if hasattr(decks, "all_names_and_ids"):
+        names_and_ids = decks.all_names_and_ids()
+        names = []
+
+        if isinstance(names_and_ids, dict):
+            for key, value in names_and_ids.items():
+                if isinstance(key, str):
+                    names.append(key)
+                elif isinstance(value, str):
+                    names.append(value)
+                elif hasattr(value, "name") and isinstance(value.name, str):
+                    names.append(value.name)
+        elif isinstance(names_and_ids, list):
+            for item in names_and_ids:
+                if isinstance(item, str):
+                    names.append(item)
+                elif isinstance(item, tuple) and item:
+                    possible_name = item[0]
+                    if isinstance(possible_name, str):
+                        names.append(possible_name)
+                elif hasattr(item, "name") and isinstance(item.name, str):
+                    names.append(item.name)
+
+        return sorted(list(set(names)))
+
+    return []
 
 
 def get_note(note_id):
