@@ -29,7 +29,64 @@ def normalize_word(word):
 
 def clean_example_text(text):
     """Normalize spacing in a sentence while keeping content intact."""
-    return " ".join(text.strip().split())
+    normalized_text = text.replace("\r", "\n").strip()
+
+    if not normalized_text:
+        return ""
+
+    non_empty_lines = [line.strip() for line in normalized_text.split("\n") if line.strip()]
+    cleaned_lines = []
+
+    for line in non_empty_lines:
+        if looks_like_json_fragment(line):
+            continue
+        cleaned_lines.append(line)
+
+    if cleaned_lines:
+        normalized_text = " ".join(cleaned_lines)
+    elif non_empty_lines:
+        normalized_text = non_empty_lines[0]
+
+    normalized_text = strip_inline_structured_tail(normalized_text)
+    compact_text = " ".join(normalized_text.split())
+    return uppercase_first_letter(compact_text)
+
+
+def strip_inline_structured_tail(text):
+    """Remove trailing inline JSON-like payload from a sentence string."""
+    json_tail_pattern = r"\s*[\[{]\s*\"?(example|definition)\"?\s*:\s*.*[\]}]\s*$"
+    return re.sub(json_tail_pattern, "", text, flags=re.IGNORECASE)
+
+
+def looks_like_json_fragment(text):
+    """Heuristically detect a standalone JSON/object fragment line."""
+    stripped = text.strip()
+
+    if not stripped:
+        return False
+
+    if stripped[0] not in "{[":
+        return False
+
+    if stripped[-1] not in "}]":
+        return False
+
+    return ":" in stripped
+
+
+def uppercase_first_letter(text):
+    """Uppercase the first alphabetic character, preserving prefix symbols."""
+    for index, char in enumerate(text):
+        if not char.isalpha():
+            continue
+
+        upper_char = char.upper()
+        if upper_char == char:
+            return text
+
+        return f"{text[:index]}{upper_char}{text[index + 1:]}"
+
+    return text
 
 
 def count_words(text):

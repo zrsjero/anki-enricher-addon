@@ -17,7 +17,23 @@ def normalize_word(word):
 
 def clean_definition_text(text):
     """Normalize spacing in definition text."""
-    return " ".join(text.strip().split())
+    compact_text = " ".join(text.strip().split())
+    return uppercase_first_letter(compact_text)
+
+
+def uppercase_first_letter(text):
+    """Uppercase the first alphabetic character, preserving prefix symbols."""
+    for index, char in enumerate(text):
+        if not char.isalpha():
+            continue
+
+        upper_char = char.upper()
+        if upper_char == char:
+            return text
+
+        return f"{text[:index]}{upper_char}{text[index + 1:]}"
+
+    return text
 
 
 def count_words(text):

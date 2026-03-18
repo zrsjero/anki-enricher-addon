@@ -24,6 +24,7 @@ from .audio_service import (
 from .media_service import media_file_exists, write_media_file
 
 logger = logging.getLogger(__name__)
+FAILED_FIELD_ORDER = ["ipa", "definition", "example", "audio"]
 
 
 def process_note(note, text_backend_mode=None):
@@ -46,7 +47,7 @@ def process_note(note, text_backend_mode=None):
             "example_updated": 0,
             "audio_updated": 0,
             "errors": 0,
-            "failed_words": [],
+            "failed_word_details": {},
         }
 
     empty_target_fields = get_empty_target_fields(note)
@@ -60,7 +61,7 @@ def process_note(note, text_backend_mode=None):
             "example_updated": 0,
             "audio_updated": 0,
             "errors": 0,
-            "failed_words": [],
+            "failed_word_details": {},
         }
 
     was_updated = False
@@ -70,6 +71,7 @@ def process_note(note, text_backend_mode=None):
     audio_updated_count = 0
     error_count = 0
     word_for_reporting = english_value.strip()
+    failed_field_keys = set()
 
     if normalize_source_fields_for_note(note):
         english_value = get_field_value(note, english_field_name)
@@ -91,6 +93,7 @@ def process_note(note, text_backend_mode=None):
                 note_id,
             )
             error_count += 1
+            failed_field_keys.add("ipa")
 
     if definition_field_name in empty_target_fields:
         definition = get_definition_for_word(
@@ -111,6 +114,7 @@ def process_note(note, text_backend_mode=None):
                 note_id,
             )
             error_count += 1
+            failed_field_keys.add("definition")
 
     if example_field_name in empty_target_fields:
         examples = get_examples_for_word(
@@ -131,6 +135,7 @@ def process_note(note, text_backend_mode=None):
                 note_id,
             )
             error_count += 1
+            failed_field_keys.add("example")
 
     if english_audio_field_name in empty_target_fields:
         filename = build_audio_filename(english_value)
@@ -150,6 +155,7 @@ def process_note(note, text_backend_mode=None):
                         note_id,
                     )
                     error_count += 1
+                    failed_field_keys.add("audio")
 
             if media_file_exists(filename):
                 set_field_value(note, english_audio_field_name, sound_tag)
@@ -163,6 +169,7 @@ def process_note(note, text_backend_mode=None):
                     note_id,
                 )
                 error_count += 1
+                failed_field_keys.add("audio")
         else:
             logger.warning(
                 "Failed to enrich field '%s' for word '%s' (note_id=%s): invalid filename or sound tag",
@@ -171,13 +178,19 @@ def process_note(note, text_backend_mode=None):
                 note_id,
             )
             error_count += 1
+            failed_field_keys.add("audio")
 
     if was_updated:
         save_note(note)
 
-    failed_words = []
+    failed_word_details = {}
     if error_count > 0 and word_for_reporting:
-        failed_words.append(word_for_reporting)
+        failed_word_details[word_for_reporting] = sorted(
+            failed_field_keys,
+            key=lambda field_key: FAILED_FIELD_ORDER.index(field_key)
+            if field_key in FAILED_FIELD_ORDER
+            else len(FAILED_FIELD_ORDER),
+        )
 
     return {
         "skipped": False,
@@ -187,7 +200,7 @@ def process_note(note, text_backend_mode=None):
         "example_updated": example_updated_count,
         "audio_updated": audio_updated_count,
         "errors": error_count,
-        "failed_words": failed_words,
+        "failed_word_details": failed_word_details,
     }
 
 
@@ -206,7 +219,7 @@ def enrich_notes(deck_name=None, text_backend_mode=None):
             "example_updated": 0,
             "audio_updated": 0,
             "errors": 0,
-            "failed_words": [],
+            "failed_word_details": {},
         }
 
     first_note = get_note(note_ids[0])
@@ -224,7 +237,7 @@ def enrich_notes(deck_name=None, text_backend_mode=None):
             "example_updated": 0,
             "audio_updated": 0,
             "errors": 0,
-            "failed_words": [],
+            "failed_word_details": {},
         }
 
     processed_count = 0
@@ -235,8 +248,7 @@ def enrich_notes(deck_name=None, text_backend_mode=None):
     example_updated_count = 0
     audio_updated_count = 0
     error_count = 0
-    failed_words = []
-    failed_words_seen = set()
+    failed_word_details = {}
 
     for note_id in note_ids:
         processed_count += 1
@@ -259,11 +271,16 @@ def enrich_notes(deck_name=None, text_backend_mode=None):
         audio_updated_count += note_result["audio_updated"]
         error_count += note_result["errors"]
 
-        for failed_word in note_result["failed_words"]:
-            if failed_word in failed_words_seen:
-                continue
-            failed_words_seen.add(failed_word)
-            failed_words.append(failed_word)
+        for failed_word, failed_fields in note_result["failed_word_details"].items():
+            if failed_word not in failed_word_details:
+                failed_word_details[failed_word] = []
+
+            existing = set(failed_word_details[failed_word])
+            for failed_field in failed_fields:
+                if failed_field in existing:
+                    continue
+                failed_word_details[failed_word].append(failed_field)
+                existing.add(failed_field)
 
     return {
         "status": "ok",
@@ -275,5 +292,5 @@ def enrich_notes(deck_name=None, text_backend_mode=None):
         "example_updated": example_updated_count,
         "audio_updated": audio_updated_count,
         "errors": error_count,
-        "failed_words": failed_words,
+        "failed_word_details": failed_word_details,
     }
