@@ -1,34 +1,37 @@
 # Anki English Enricher Add-on
 
-Anki English Enricher is a Python add-on that enriches vocabulary notes by filling missing data in selected fields.
+Anki English Enricher is a Python add-on that enriches vocabulary notes by filling missing data in configured fields.
 
-The add-on is designed for a focused workflow:
+The add-on workflow:
 - read notes of one configured note type;
-- fill missing IPA, definition, example sentences, and audio;
+- fill missing IPA, definition, examples, and audio;
 - save generated media files to Anki `collection.media`;
-- display a summary of processed/updated/skipped/error counts.
+- show a summary with counters and failed words/fields.
 
 ## Current Status
 
-As of **March 14, 2026**, the add-on has a working end-to-end pipeline with:
-- IPA from Free Dictionary API;
+As of **March 18, 2026**, the add-on has a working end-to-end pipeline with:
+- IPA from Free Dictionary API only;
 - definition from Free Dictionary API with optional local Ollama fallback;
 - examples from Free Dictionary API with optional local Ollama fallback;
-- audio generated via native macOS `say` command and stored as `.aiff`.
+- audio generated via native macOS `say` and stored as `.aiff`.
 
 ## Features
 
 - Adds menu action: `Tools -> English Note Enricher`
 - Shows one run dialog with:
-  - deck selection (selected deck or all decks)
+  - deck selection (`[All decks]` + all deck names)
+  - default deck selection: current/last active deck (if available), otherwise `[All decks]`
   - source selection for `Definition` and `Example` (`dictionaryapi` or `Ollama`)
 - Targets one note type from config (`note_type_name`)
 - Verifies required fields exist in the model before processing
 - Updates only empty target fields
-- Optional lowercasing of first character in `English` and `Russian`
+- Optional lowercasing of first character in source fields (`English`, `Russian`)
+- Normalizes generated `Definition`/`Example` first letter to uppercase
+- Cleans malformed example payloads (e.g., JSON fragments mixed into sentence text)
 - Generates deterministic audio filenames
 - Writes audio files into Anki media folder
-- Produces run summary in a popup dialog
+- Produces run summary in a popup dialog, including failed words and failed fields
 
 ## Enrichment Rules
 
@@ -52,26 +55,28 @@ By default it enriches only these target fields when empty:
 - Selection strategy:
   1. `entry["phonetic"]` if present and valid
   2. first valid `phonetics[].text`
-- Normalization: ensures slash-wrapped format like `/wɜːd/`
+- Normalization: slash-wrapped format like `/wɜːd/`
+- No Ollama fallback for IPA
 
 ### Definition
 
 - Primary source: Free Dictionary API meanings/definitions
 - Extracts `definition["definition"]`
-- Returns one best value
 - Optional fallback source: local Ollama model
-- Applies lightweight quality checks for generated definition
+- Applies quality checks for generated definition
+- Applies text cleanup + first-letter uppercase normalization
 
 ### Examples
 
 - Primary source: Free Dictionary API meanings/definitions
 - Extracts `definition["example"]`
-- Cleans whitespace
+- Cleans whitespace and malformed structured fragments
 - De-duplicates case-insensitively
 - Limits count by config (`example_count`)
-- Stores output as newline-separated text
+- Stores output as HTML line breaks (`<br>`)
 - Optional fallback source: local Ollama model
-- Applies quality checks for generated examples (word presence, length, simple punctuation limits)
+- Applies quality checks for generated examples
+- Applies first-letter uppercase normalization
 
 ### Audio
 
@@ -83,7 +88,9 @@ By default it enriches only these target fields when empty:
 
 ## Configuration
 
-Config lives in `config.json`:
+Config lives in `config.json`.
+
+Current repository config:
 
 ```json
 {
@@ -96,17 +103,17 @@ Config lives in `config.json`:
     "example": "Example",
     "english_audio": "EnglishAudio"
   },
-  "example_count": 3,
+  "example_count": 2,
   "definition_backend": "dictionary_then_ollama",
   "example_backend": "dictionary_then_ollama",
-  "normalize_source_first_char_lowercase": false,
+  "normalize_source_first_char_lowercase": true,
   "ollama": {
-    "enabled": false,
+    "enabled": true,
     "base_url": "http://127.0.0.1:11434",
     "model": "qwen2.5:3b-instruct",
     "timeout_seconds": 25,
     "temperature": 0.6,
-    "max_attempts_per_word": 4
+    "max_attempts_per_word": 3
   },
   "audio_prefix": "jeeng",
   "audio_backend": "macos_say"
@@ -115,20 +122,20 @@ Config lives in `config.json`:
 
 ### Config Keys
 
-- `note_type_name`: name of target note type
+- `note_type_name`: target note type name
 - `fields`: mapping from logical keys to actual note field names
-- `example_count`: max examples to save in `Example`
+- `example_count`: max number of examples to store in `Example`
 - `definition_backend`: definition strategy (`dictionary_then_ollama` or `ollama_only`)
 - `example_backend`: example strategy (`dictionary_then_ollama` or `ollama_only`)
-- `normalize_source_first_char_lowercase`: lowercases first character in `English` and `Russian` for notes being enriched
-- `ollama.enabled`: enable/disable local Ollama fallback
-- `ollama.base_url`: local Ollama API URL (default `http://127.0.0.1:11434`)
-- `ollama.model`: local model name available in Ollama
-- `ollama.timeout_seconds`: request timeout for local generation
-- `ollama.temperature`: generation randomness
-- `ollama.max_attempts_per_word`: max number of Ollama requests per word
+- `normalize_source_first_char_lowercase`: lowercases first char in `English`/`Russian`
+- `ollama.enabled`: enable/disable local Ollama for definition/example
+- `ollama.base_url`: local Ollama API URL
+- `ollama.model`: local model name
+- `ollama.timeout_seconds`: Ollama request timeout
+- `ollama.temperature`: Ollama temperature for definition/example generation
+- `ollama.max_attempts_per_word`: max Ollama requests per word for definition/example
 - `audio_prefix`: prefix in generated audio filenames
-- `audio_backend`: currently supports `macos_say`
+- `audio_backend`: audio backend (`macos_say`)
 
 ## Project Structure
 
@@ -147,6 +154,7 @@ anki_enricher_addon/
     ipa_service.py
     definition_service.py
     example_service.py
+    source_fields_case_service.py
     audio_service.py
     media_service.py
 
@@ -158,17 +166,18 @@ anki_enricher_addon/
 
 ## Module Responsibilities
 
-- `main.py`: menu registration and summary popup
+- `main.py`: menu registration, run options dialog, summary popup
 - `services/config_service.py`: config access helpers
-- `services/note_service.py`: note queries and field-level operations
-- `services/enrich_service.py`: orchestration and run statistics
-- `services/ipa_service.py`: IPA extraction/normalization
-- `services/definition_service.py`: definition extraction/formatting
-- `services/example_service.py`: example extraction/formatting
+- `services/note_service.py`: note/deck queries and field operations
+- `services/enrich_service.py`: orchestration, counters, failed-word diagnostics
+- `services/ipa_service.py`: dictionary IPA extraction/normalization
+- `services/definition_service.py`: definition extraction/cleanup/formatting
+- `services/example_service.py`: example extraction/cleanup/formatting
+- `services/source_fields_case_service.py`: optional source field normalization
 - `services/audio_service.py`: filename policy + backend routing
 - `services/media_service.py`: media path and file writes
 - `providers/dictionary_api_provider.py`: HTTP client for dictionary API
-- `providers/ollama_provider.py`: local Ollama text-generation client
+- `providers/ollama_provider.py`: local Ollama client for definition/examples
 - `providers/macos_say_audio_provider.py`: macOS speech synthesis provider
 
 ## Installation
@@ -176,62 +185,83 @@ anki_enricher_addon/
 1. Open Anki add-ons folder for your profile.
 2. Place this project under `addons21/anki_enricher_addon`.
 3. Restart Anki.
-4. In Anki, use `Tools -> English Note Enricher`.
+4. In Anki, run `Tools -> English Note Enricher`.
 
 ### Optional: Ollama setup on macOS
 
 1. Install Ollama:
-   - with Homebrew: `brew install --cask ollama`
+   - `brew install --cask ollama`
    - or download from `https://ollama.com/download`
-2. Start Ollama app once, or run service from terminal.
-3. Pull a lightweight model:
+2. Start Ollama app or service.
+3. Pull model:
    - `ollama pull qwen2.5:3b-instruct`
-4. Verify local API:
+4. Verify API:
    - `curl http://127.0.0.1:11434/api/tags`
-5. Enable fallback in `config.json`:
-   - set `"ollama.enabled": true`
-   - keep `"definition_backend": "dictionary_then_ollama"`
-   - keep `"example_backend": "dictionary_then_ollama"`
-
-### Ollama-only mode (optional)
-
-To skip dictionary text quality and use only local LLM generation:
-- set `"definition_backend": "ollama_only"`
-- set `"example_backend": "ollama_only"`
-
-## Runtime Prerequisites
-
-- Anki desktop with Python add-on support
-- `requests` module available in Anki Python environment
-- macOS for `macos_say` backend (`say` must be available in PATH)
-- internet access for dictionary API requests
-- optional local Ollama runtime for offline definition/example fallback
+5. Ensure in `config.json`:
+   - `"ollama.enabled": true`
 
 ## Usage
 
-1. Ensure your target note type exists and fields match config.
+1. Ensure target note type exists and fields match config.
 2. Keep `English` populated for notes you want to enrich.
-3. Leave `IPA`, `Definition`, `Example`, `EnglishAudio` empty if you want auto-fill.
-4. Run `Tools -> English Note Enricher` and choose options in one dialog:
-   - deck (or `All decks`)
-   - text source for `Definition` and `Example`
-   - `dictionaryapi`: dictionary first, then Ollama fallback
-   - `Ollama`: Ollama only
-   - default selected option: `Ollama`
+3. Leave target fields empty if you want auto-fill.
+4. Run `Tools -> English Note Enricher` and choose:
+   - deck (default is current/last active deck)
+   - source for definition/examples:
+     - `dictionaryapi` -> dictionary, then Ollama fallback
+     - `Ollama` -> Ollama only
 5. Review summary popup.
+
+Summary format includes per-word failed fields, for example:
+
+```text
+Processed: 8
+Updated: 0
+Skipped: 0
+IPA updated: 0
+Definition updated: 0
+Example updated: 0
+Audio updated: 0
+Errors: 8
+
+Failed words:
+1) hesitantly [ipa]
+2) umbilic [ipa, audio]
+3) fraudster [example]
+4) gawp [definition, audio]
+```
+
+## Logging
+
+Field-level failures are logged with `logger.warning` in `services/enrich_service.py`, including:
+- note id
+- word
+- field
+- failure reason
+
+Basic info logs also exist in `example_service.py` and `media_service.py`.
+
+To view logs, run Anki from terminal (macOS):
+- `/Applications/Anki.app/Contents/MacOS/launcher`
 
 ## Troubleshooting
 
 ### "Missing required fields"
 
 - Field names in config do not match note model fields.
-- Fix `config.json` mappings.
+- Fix `config.json` field mappings.
 
-### No IPA/definition/examples found
+### No IPA found
 
-- Dictionary API has no data for the word.
-- Network issue or API non-200 response.
-- If `ollama.enabled=true`, ensure Ollama is running and the configured model is pulled.
+- Dictionary API has no phonetic data for this word.
+- API/network issue.
+- IPA is dictionary-only (no Ollama fallback).
+
+### No definition/examples found
+
+- Dictionary has no suitable data.
+- Ollama disabled/unavailable when fallback is needed.
+- Generated text may fail quality filters.
 
 ### Audio not generated
 
@@ -240,29 +270,15 @@ To skip dictionary text quality and use only local LLM generation:
 
 ### Add-on loads but does nothing
 
-- No notes with empty target fields match configured `note_type_name` and selected deck.
-
-## Design Decisions
-
-- Keep architecture simple and functional (no heavy abstractions)
-- No cache layer for now
-- No config validation layer for now
-- Backend switch prepared for future audio providers
+- No notes with empty target fields match configured note type/deck.
 
 ## Known Limitations
 
-- `audio_backend` currently has only one production option: `macos_say`
+- Audio backend currently: `macos_say` only
 - Audio format is `.aiff` (larger than compressed formats)
-- No retries/backoff for external API requests
-- Logging is minimal and mostly service-level
-- Ollama fallback quality depends on selected local model
-
-## Development Roadmap
-
-1. Add second audio backend and keep same `audio_service` interface.
-2. Add optional config validation with user-friendly errors.
-3. Add tests for parsing/extraction helpers.
-4. Introduce lightweight structured logging for easier debugging.
+- No config schema validation layer yet
+- No automated tests yet
+- Ollama text quality depends on local model
 
 ## License
 
