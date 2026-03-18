@@ -11,18 +11,20 @@ from aqt.qt import (
 )
 from aqt.utils import showInfo
 
+from .providers.text_provider_registry import get_available_text_providers
+from .services.config_service import get_text_provider
 from .services.enrich_service import enrich_notes
 from .services.note_service import get_deck_names, get_last_active_deck_name
 
 ALL_DECKS_OPTION = "[All decks]"
-TEXT_SOURCE_DICTIONARY = "dictionaryapi"
-TEXT_SOURCE_OLLAMA = "Ollama"
 
 
 def ask_user_for_run_options():
     """Show one dialog for deck and text source selection."""
     deck_names = get_deck_names()
     last_active_deck_name = get_last_active_deck_name()
+    text_provider_options = get_available_text_providers()
+    default_text_provider = get_text_provider()
 
     dialog = QDialog(mw)
     dialog.setWindowTitle("English Note Enricher")
@@ -42,10 +44,18 @@ def ask_user_for_run_options():
     form_layout.addRow("Deck to enrich:", deck_combo)
 
     source_combo = QComboBox(dialog)
-    source_combo.addItem(TEXT_SOURCE_OLLAMA)
-    source_combo.addItem(TEXT_SOURCE_DICTIONARY)
+    for provider_key, provider_label in text_provider_options:
+        source_combo.addItem(provider_label, provider_key)
+
+    default_provider_index = 0
+    for index, (provider_key, _) in enumerate(text_provider_options):
+        if provider_key == default_text_provider:
+            default_provider_index = index
+            break
+    source_combo.setCurrentIndex(default_provider_index)
+
     form_layout.addRow(
-        "Source for definitions/examples:",
+        "Provider for definitions/examples:",
         source_combo,
     )
     layout.addLayout(form_layout)
@@ -62,15 +72,14 @@ def ask_user_for_run_options():
         return "__cancelled__"
 
     selected_deck_name = deck_combo.currentText()
-    selected_source = source_combo.currentText()
+    selected_text_provider = source_combo.currentData()
+    if not isinstance(selected_text_provider, str):
+        selected_text_provider = default_text_provider
 
     if selected_deck_name == ALL_DECKS_OPTION:
         selected_deck_name = None
 
-    if selected_source == TEXT_SOURCE_OLLAMA:
-        return selected_deck_name, "ollama_only"
-
-    return selected_deck_name, "dictionary_then_ollama"
+    return selected_deck_name, selected_text_provider
 
 
 def on_menu_click() -> None:
@@ -80,11 +89,11 @@ def on_menu_click() -> None:
     if run_options == "__cancelled__":
         return
 
-    selected_deck_name, selected_text_backend_mode = run_options
+    selected_deck_name, selected_text_provider = run_options
 
     result = enrich_notes(
         deck_name=selected_deck_name,
-        text_backend_mode=selected_text_backend_mode,
+        text_provider_key=selected_text_provider,
     )
 
     if result["status"] == "no_notes":

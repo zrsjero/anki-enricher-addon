@@ -32,16 +32,26 @@ def get_example_count():
     return config.get("example_count", 3)
 
 
-def get_example_backend():
-    """Return active example generation backend strategy."""
+def get_text_provider():
+    """Return active provider key for definition/example generation."""
     config = get_addon_config()
-    return config.get("example_backend", "dictionary_then_ollama")
+    provider = config.get("text_provider")
+
+    if isinstance(provider, str) and provider.strip():
+        return provider.strip()
+
+    return "ollama"
 
 
-def get_definition_backend():
-    """Return active definition generation backend strategy."""
+def get_text_provider_max_attempts_per_word():
+    """Return max provider requests per word for definition/example generation."""
     config = get_addon_config()
-    return config.get("definition_backend", "dictionary_then_ollama")
+    max_attempts = config.get("text_provider_max_attempts_per_word")
+
+    if max_attempts is not None:
+        return max_attempts
+
+    return 3
 
 
 def is_source_first_char_lowercase_enabled():
@@ -89,12 +99,6 @@ def get_ollama_temperature():
     """Return Ollama sampling temperature."""
     ollama_config = get_ollama_config()
     return ollama_config.get("temperature", 0.6)
-
-
-def get_ollama_max_attempts_per_word():
-    """Return max Ollama requests per word for example generation."""
-    ollama_config = get_ollama_config()
-    return ollama_config.get("max_attempts_per_word", 4)
 
 
 def get_audio_prefix():

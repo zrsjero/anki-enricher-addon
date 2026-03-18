@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 FAILED_FIELD_ORDER = ["ipa", "definition", "example", "audio"]
 
 
-def process_note(note, text_backend_mode=None):
+def process_note(note, text_provider_key=None):
     """Enrich a single note and return per-note processing statistics."""
     english_field_name = get_field_name("english")
     ipa_field_name = get_field_name("ipa")
@@ -98,7 +98,7 @@ def process_note(note, text_backend_mode=None):
     if definition_field_name in empty_target_fields:
         definition = get_definition_for_word(
             english_value,
-            backend_override=text_backend_mode,
+            provider_override=text_provider_key,
         )
 
         if definition:
@@ -119,7 +119,7 @@ def process_note(note, text_backend_mode=None):
     if example_field_name in empty_target_fields:
         examples = get_examples_for_word(
             english_value,
-            backend_override=text_backend_mode,
+            provider_override=text_provider_key,
         )
 
         if examples:
@@ -204,7 +204,7 @@ def process_note(note, text_backend_mode=None):
     }
 
 
-def enrich_notes(deck_name=None, text_backend_mode=None):
+def enrich_notes(deck_name=None, text_provider_key=None):
     """Run enrichment for configured note type and optional deck."""
     note_ids = get_note_ids(deck_name=deck_name)
 
@@ -256,7 +256,7 @@ def enrich_notes(deck_name=None, text_backend_mode=None):
         note = get_note(note_id)
         note_result = process_note(
             note,
-            text_backend_mode=text_backend_mode,
+            text_provider_key=text_provider_key,
         )
 
         if note_result["skipped"]:

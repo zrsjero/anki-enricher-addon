@@ -1,13 +1,12 @@
-"""Definition extraction service with dictionary and Ollama fallback."""
+"""Definition generation service using the selected text provider."""
 
 import html
 
 from .config_service import (
-    get_definition_backend,
-    get_ollama_max_attempts_per_word,
+    get_text_provider,
+    get_text_provider_max_attempts_per_word,
 )
-from ..providers.dictionary_api_provider import fetch_dictionary_entries
-from ..providers.ollama_provider import generate_definition_with_ollama
+from ..providers.text_provider_registry import generate_definition_with_provider
 
 
 def normalize_word(word):
@@ -57,61 +56,16 @@ def is_quality_definition(definition):
     return True
 
 
-def extract_definition_from_entry(entry):
-    """Extract first usable definition from a single dictionary API entry."""
-    meanings = entry.get("meanings", [])
-
-    if not isinstance(meanings, list):
-        return None
-
-    for meaning in meanings:
-        if not isinstance(meaning, dict):
-            continue
-
-        definitions = meaning.get("definitions", [])
-
-        if not isinstance(definitions, list):
-            continue
-
-        for definition_item in definitions:
-            if not isinstance(definition_item, dict):
-                continue
-
-            definition = definition_item.get("definition")
-
-            if not isinstance(definition, str):
-                continue
-
-            cleaned_definition = clean_definition_text(definition)
-
-            if is_quality_definition(cleaned_definition):
-                return cleaned_definition
-
-    return None
-
-
-def get_definition_from_dictionary(word):
-    """Return first valid dictionary definition for a word."""
-    entries = fetch_dictionary_entries(word)
-
-    for entry in entries:
-        if not isinstance(entry, dict):
-            continue
-
-        definition = extract_definition_from_entry(entry)
-
-        if definition:
-            return definition
-
-    return None
-
-
-def get_definition_from_ollama(word):
-    """Try to generate definition with Ollama using bounded retries."""
-    max_attempts = max(1, int(get_ollama_max_attempts_per_word()))
+def get_definition_from_provider(word, provider_override=None):
+    """Try to generate definition with selected provider using bounded retries."""
+    provider_key = provider_override or get_text_provider()
+    max_attempts = max(1, int(get_text_provider_max_attempts_per_word()))
 
     for _ in range(max_attempts):
-        generated_definition = generate_definition_with_ollama(word)
+        generated_definition = generate_definition_with_provider(
+            word=word,
+            provider_key=provider_key,
+        )
 
         if not isinstance(generated_definition, str):
             continue
@@ -124,27 +78,17 @@ def get_definition_from_ollama(word):
     return None
 
 
-def get_definition_for_word(word, backend_override=None):
-    """Return one definition via selected backend strategy."""
+def get_definition_for_word(word, provider_override=None):
+    """Return one definition via selected provider."""
     normalized_word = normalize_word(word)
 
     if not normalized_word:
         return None
 
-    definition_backend = backend_override or get_definition_backend()
-
-    if definition_backend == "ollama_only":
-        return get_definition_from_ollama(normalized_word)
-
-    dictionary_definition = get_definition_from_dictionary(normalized_word)
-
-    if dictionary_definition:
-        return dictionary_definition
-
-    if definition_backend == "dictionary_then_ollama":
-        return get_definition_from_ollama(normalized_word)
-
-    return None
+    return get_definition_from_provider(
+        normalized_word,
+        provider_override=provider_override,
+    )
 
 
 def format_definition(definition):

@@ -9,16 +9,15 @@
     "english_audio": "EnglishAudio"
   },
   "example_count": 2,
-  "definition_backend": "dictionary_then_ollama",
-  "example_backend": "dictionary_then_ollama",
+  "text_provider": "ollama",
+  "text_provider_max_attempts_per_word": 2,
   "normalize_source_first_char_lowercase": true,
   "ollama": {
     "enabled": true,
     "base_url": "http://127.0.0.1:11434",
     "model": "qwen2.5:3b-instruct",
     "timeout_seconds": 25,
-    "temperature": 0.6,
-    "max_attempts_per_word": 3
+    "temperature": 0.6
   },
   "audio_prefix": "jeeng",
   "audio_backend": "macos_say"
