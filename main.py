@@ -12,7 +12,7 @@ from aqt.qt import (
 from aqt.utils import showInfo
 
 from .services.enrich_service import enrich_notes
-from .services.note_service import get_deck_names
+from .services.note_service import get_deck_names, get_last_active_deck_name
 
 ALL_DECKS_OPTION = "[All decks]"
 TEXT_SOURCE_DICTIONARY = "dictionaryapi"
@@ -22,6 +22,7 @@ TEXT_SOURCE_OLLAMA = "Ollama"
 def ask_user_for_run_options():
     """Show one dialog for deck and text source selection."""
     deck_names = get_deck_names()
+    last_active_deck_name = get_last_active_deck_name()
 
     dialog = QDialog(mw)
     dialog.setWindowTitle("English Note Enricher")
@@ -33,6 +34,11 @@ def ask_user_for_run_options():
     deck_combo.addItem(ALL_DECKS_OPTION)
     for deck_name in deck_names:
         deck_combo.addItem(deck_name)
+
+    if last_active_deck_name and last_active_deck_name in deck_names:
+        default_index = deck_names.index(last_active_deck_name) + 1
+        deck_combo.setCurrentIndex(default_index)
+
     form_layout.addRow("Deck to enrich:", deck_combo)
 
     source_combo = QComboBox(dialog)

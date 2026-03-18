@@ -109,6 +109,51 @@ def get_deck_names():
     return []
 
 
+def get_last_active_deck_name():
+    """Return current/last active deck name from Anki, if available."""
+    decks = mw.col.decks
+
+    selected_deck_id = None
+
+    if hasattr(decks, "selected"):
+        try:
+            selected_value = decks.selected()
+            selected_deck_id = int(selected_value)
+        except (TypeError, ValueError):
+            selected_deck_id = None
+
+    if selected_deck_id:
+        if hasattr(decks, "name"):
+            try:
+                selected_name = decks.name(selected_deck_id)
+                if isinstance(selected_name, str) and selected_name:
+                    return selected_name
+            except Exception:
+                pass
+
+        if hasattr(decks, "get"):
+            try:
+                selected_deck = decks.get(selected_deck_id)
+                if isinstance(selected_deck, dict):
+                    selected_name = selected_deck.get("name")
+                    if isinstance(selected_name, str) and selected_name:
+                        return selected_name
+            except Exception:
+                pass
+
+    if hasattr(decks, "current"):
+        try:
+            current_deck = decks.current()
+            if isinstance(current_deck, dict):
+                current_name = current_deck.get("name")
+                if isinstance(current_name, str) and current_name:
+                    return current_name
+        except Exception:
+            pass
+
+    return None
+
+
 def get_note(note_id):
     """Load a note object by ID."""
     return mw.col.get_note(note_id)
