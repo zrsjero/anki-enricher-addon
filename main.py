@@ -93,6 +93,12 @@ def on_menu_click() -> None:
         showInfo(f"Missing required fields:\n{missing_fields_text}")
         return
 
+    failed_words = result.get("failed_words", [])
+    if failed_words:
+        failed_words_text = "\n".join(failed_words)
+    else:
+        failed_words_text = "None"
+
     showInfo(
         f"Processed: {result['processed']}\n"
         f"Updated: {result['updated']}\n"
@@ -101,7 +107,8 @@ def on_menu_click() -> None:
         f"Definition updated: {result['definition_updated']}\n"
         f"Example updated: {result['example_updated']}\n"
         f"Audio updated: {result['audio_updated']}\n"
-        f"Errors: {result['errors']}"
+        f"Errors: {result['errors']}\n"
+        f"Failed words:\n{failed_words_text}"
     )
 
 
