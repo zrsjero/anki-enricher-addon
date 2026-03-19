@@ -11,6 +11,7 @@ FIELD_KEY_IPA = "ipa"
 FIELD_KEY_DEFINITION = "definition"
 FIELD_KEY_EXAMPLE = "example"
 FIELD_KEY_ENGLISH_AUDIO = "english_audio"
+ENRICHED_TAG_NAME = "enriched"
 
 REQUIRED_FIELD_KEYS = [
     FIELD_KEY_ENGLISH,
@@ -34,19 +35,8 @@ def escape_search_value(value):
     return value.replace('"', '\\"')
 
 
-def build_empty_field_term(field_name):
-    """Build Anki search term for an empty field."""
-    escaped_field_name = (
-        field_name
-        .replace("\\", "\\\\")
-        .replace(" ", "\\ ")
-        .replace(":", "\\:")
-    )
-    return f"{escaped_field_name}:"
-
-
 def build_note_search_query(deck_name=None):
-    """Build note search query by note type, optional deck, and empty targets."""
+    """Build note search query by note type, optional deck, and missing enriched tag."""
     note_type_name = escape_search_value(get_note_type_name())
     query = f'note:"{note_type_name}"'
 
@@ -54,15 +44,7 @@ def build_note_search_query(deck_name=None):
         escaped_deck_name = escape_search_value(deck_name)
         query += f' deck:"{escaped_deck_name}"'
 
-    target_field_names = get_target_field_names()
-    empty_terms = []
-
-    for field_name in target_field_names:
-        empty_terms.append(build_empty_field_term(field_name))
-
-    if empty_terms:
-        empty_targets_query = " or ".join(empty_terms)
-        query += f" ({empty_targets_query})"
+    query += f' -tag:{ENRICHED_TAG_NAME}'
 
     return query
 
@@ -216,3 +198,78 @@ def get_empty_target_fields(note):
             empty_fields.append(field_name)
 
     return empty_fields
+
+
+def get_enriched_tag_name():
+    """Return tag name that marks completed enrichment."""
+    return ENRICHED_TAG_NAME
+
+
+def note_has_tag(note, tag_name):
+    """Return whether note has a tag, tolerant to Anki API variants."""
+    normalized_tag = (tag_name or "").strip()
+    if not normalized_tag:
+        return False
+
+    if hasattr(note, "has_tag"):
+        try:
+            return bool(note.has_tag(normalized_tag))
+        except Exception:
+            pass
+
+    if hasattr(note, "hasTag"):
+        try:
+            return bool(note.hasTag(normalized_tag))
+        except Exception:
+            pass
+
+    tags = getattr(note, "tags", None)
+    if isinstance(tags, list):
+        normalized_lower = normalized_tag.lower()
+        return any(
+            isinstance(existing_tag, str)
+            and existing_tag.strip().lower() == normalized_lower
+            for existing_tag in tags
+        )
+
+    if isinstance(tags, str):
+        normalized_lower = normalized_tag.lower()
+        return any(
+            tag_part.strip().lower() == normalized_lower
+            for tag_part in tags.split()
+            if tag_part.strip()
+        )
+
+    return False
+
+
+def add_tag_to_note(note, tag_name):
+    """Add tag to a note if missing. Return True only when tag was added."""
+    normalized_tag = (tag_name or "").strip()
+    if not normalized_tag or note_has_tag(note, normalized_tag):
+        return False
+
+    if hasattr(note, "add_tag"):
+        try:
+            note.add_tag(normalized_tag)
+            return True
+        except Exception:
+            pass
+
+    if hasattr(note, "addTag"):
+        try:
+            note.addTag(normalized_tag)
+            return True
+        except Exception:
+            pass
+
+    tags = getattr(note, "tags", None)
+    if isinstance(tags, list):
+        tags.append(normalized_tag)
+        return True
+
+    if isinstance(tags, str):
+        note.tags = f"{tags} {normalized_tag}".strip()
+        return True
+
+    return False

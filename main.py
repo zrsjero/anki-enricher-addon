@@ -123,7 +123,7 @@ def on_menu_click() -> None:
         f"Skipped: {result['skipped']}\n"
         f"IPA updated: {result['ipa_updated']}\n"
         f"Definition updated: {result['definition_updated']}\n"
-        f"Example updated: {result['example_updated']}\n"
+        f"Examples updated: {result['example_updated']}\n"
         f"Audio updated: {result['audio_updated']}\n"
         f"Errors: {result['errors']}\n\n"
         f"Failed words:\n{failed_words_text}"

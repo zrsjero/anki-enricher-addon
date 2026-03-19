@@ -9,6 +9,9 @@ from .note_service import (
     get_missing_required_fields,
     get_field_value,
     get_empty_target_fields,
+    get_enriched_tag_name,
+    note_has_tag,
+    add_tag_to_note,
     set_field_value,
     save_note,
 )
@@ -53,8 +56,10 @@ def process_note(note, text_provider_key=None):
         }
 
     empty_target_fields = get_empty_target_fields(note)
+    enriched_tag_name = get_enriched_tag_name()
+    has_enriched_tag = note_has_tag(note, enriched_tag_name)
 
-    if not empty_target_fields:
+    if not empty_target_fields and has_enriched_tag:
         return {
             "skipped": True,
             "updated": False,
@@ -184,6 +189,10 @@ def process_note(note, text_provider_key=None):
             )
             error_count += 1
             failed_field_keys.add("audio")
+
+    remaining_empty_target_fields = get_empty_target_fields(note)
+    if not remaining_empty_target_fields and add_tag_to_note(note, enriched_tag_name):
+        was_updated = True
 
     if was_updated:
         save_note(note)
