@@ -30,12 +30,14 @@ FAILED_FIELD_ORDER = ["ipa", "definition", "example", "audio"]
 def process_note(note, text_provider_key=None):
     """Enrich a single note and return per-note processing statistics."""
     english_field_name = get_field_name("english")
+    russian_field_name = get_field_name("russian")
     ipa_field_name = get_field_name("ipa")
     definition_field_name = get_field_name("definition")
     example_field_name = get_field_name("example")
     english_audio_field_name = get_field_name("english_audio")
 
     english_value = get_field_value(note, english_field_name)
+    russian_value = get_field_value(note, russian_field_name)
     note_id = getattr(note, "id", "unknown")
 
     if not english_value:
@@ -75,6 +77,7 @@ def process_note(note, text_provider_key=None):
 
     if normalize_source_fields_for_note(note):
         english_value = get_field_value(note, english_field_name)
+        russian_value = get_field_value(note, russian_field_name)
         word_for_reporting = english_value.strip()
         was_updated = True
 
@@ -99,6 +102,7 @@ def process_note(note, text_provider_key=None):
         definition = get_definition_for_word(
             english_value,
             provider_override=text_provider_key,
+            russian_hint=russian_value,
         )
 
         if definition:
@@ -120,6 +124,7 @@ def process_note(note, text_provider_key=None):
         examples = get_examples_for_word(
             english_value,
             provider_override=text_provider_key,
+            russian_hint=russian_value,
         )
 
         if examples:

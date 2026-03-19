@@ -25,30 +25,48 @@ def build_ollama_generate_url():
     return urljoin(normalized_base_url, "api/generate")
 
 
-def build_prompt(word, count):
+def build_prompt(word, count, russian_hint=None):
     """Build deterministic prompt for sentence generation."""
+    sense_hint_block = ""
+    if russian_hint:
+        sense_hint_block = (
+            f"Sense hint in Russian: {russian_hint}\n"
+        )
+
     return (
         "You are helping to create flashcards for English learners.\n"
         f"Generate exactly {count} short, natural English example sentences.\n"
         f"Target word: {word}\n"
+        f"{sense_hint_block}"
         "Rules:\n"
+        "- The meaning must match the Russian sense hint if it is provided.\n"
         "- Each sentence must contain the target word exactly once.\n"
         "- Keep sentence length between 6 and 14 words.\n"
         "- Use CEFR A2-B1 vocabulary where possible.\n"
         "- Avoid proper names, idioms, and slang.\n"
+        "- Output only English sentences (no Russian text).\n"
         '- Return strict JSON only: {"examples":["...", "..."]}\n'
     )
 
 
-def build_definition_prompt(word):
+def build_definition_prompt(word, russian_hint=None):
     """Build deterministic prompt for definition generation."""
+    sense_hint_block = ""
+    if russian_hint:
+        sense_hint_block = (
+            f"Sense hint in Russian: {russian_hint}\n"
+        )
+
     return (
         "You are helping to create flashcards for English learners.\n"
         f"Write one short English definition for the word: {word}\n"
+        f"{sense_hint_block}"
         "Rules:\n"
+        "- The meaning must match the Russian sense hint if it is provided.\n"
         "- Keep it to one sentence.\n"
         "- Use simple CEFR A2-B1 vocabulary.\n"
         "- Do not use markdown.\n"
+        "- Output only English text (no Russian text).\n"
         '- Return strict JSON only: {"definition":"..."}\n'
     )
 
@@ -97,7 +115,7 @@ def parse_ollama_definition(response_text):
     return cleaned_definition
 
 
-def generate_examples_with_ollama(word, count):
+def generate_examples_with_ollama(word, count, russian_hint=None):
     """Generate example sentences with local Ollama and return list."""
     if not is_ollama_enabled():
         return []
@@ -112,7 +130,11 @@ def generate_examples_with_ollama(word, count):
 
     payload = {
         "model": get_ollama_model(),
-        "prompt": build_prompt(word=word, count=count),
+        "prompt": build_prompt(
+            word=word,
+            count=count,
+            russian_hint=russian_hint,
+        ),
         "stream": False,
         "format": "json",
         "options": {
@@ -143,7 +165,7 @@ def generate_examples_with_ollama(word, count):
     return parse_ollama_examples(raw_response)
 
 
-def generate_definition_with_ollama(word):
+def generate_definition_with_ollama(word, russian_hint=None):
     """Generate a single definition with local Ollama."""
     if not is_ollama_enabled():
         return None
@@ -158,7 +180,10 @@ def generate_definition_with_ollama(word):
 
     payload = {
         "model": get_ollama_model(),
-        "prompt": build_definition_prompt(word=word),
+        "prompt": build_definition_prompt(
+            word=word,
+            russian_hint=russian_hint,
+        ),
         "stream": False,
         "format": "json",
         "options": {

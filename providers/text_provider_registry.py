@@ -34,7 +34,7 @@ def resolve_text_provider(provider_key):
     return TEXT_PROVIDER_REGISTRY.get(provider_key)
 
 
-def generate_definition_with_provider(word, provider_key):
+def generate_definition_with_provider(word, provider_key, russian_hint=None):
     """Generate definition using the selected text provider."""
     provider = resolve_text_provider(provider_key)
 
@@ -46,10 +46,14 @@ def generate_definition_with_provider(word, provider_key):
     if not callable(generate_definition):
         return None
 
-    return generate_definition(word)
+    try:
+        return generate_definition(word, russian_hint=russian_hint)
+    except TypeError:
+        # Backward compatibility for providers without russian_hint support.
+        return generate_definition(word)
 
 
-def generate_examples_with_provider(word, count, provider_key):
+def generate_examples_with_provider(word, count, provider_key, russian_hint=None):
     """Generate examples using the selected text provider."""
     provider = resolve_text_provider(provider_key)
 
@@ -61,4 +65,8 @@ def generate_examples_with_provider(word, count, provider_key):
     if not callable(generate_examples):
         return []
 
-    return generate_examples(word, count)
+    try:
+        return generate_examples(word, count, russian_hint=russian_hint)
+    except TypeError:
+        # Backward compatibility for providers without russian_hint support.
+        return generate_examples(word, count)

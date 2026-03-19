@@ -1,6 +1,7 @@
 """Definition generation service using the selected text provider."""
 
 import html
+import re
 
 from .config_service import (
     get_text_provider,
@@ -45,6 +46,9 @@ def is_quality_definition(definition):
     if not definition:
         return False
 
+    if re.search(r"[А-Яа-яЁё]", definition):
+        return False
+
     word_count = count_words(definition)
 
     if word_count < 4 or word_count > 24:
@@ -56,31 +60,35 @@ def is_quality_definition(definition):
     return True
 
 
-def get_definition_from_provider(word, provider_override=None):
-    """Try to generate definition with selected provider using bounded retries."""
+def get_definition_from_provider(word, provider_override=None, russian_hint=None):
+    """Try provider generation with optional russian-hint fallback per attempt."""
     provider_key = provider_override or get_text_provider()
     max_attempts = max(1, int(get_text_provider_max_attempts_per_word()))
+    hint_attempts = [russian_hint, None] if russian_hint else [None]
 
     for _ in range(max_attempts):
-        generated_definition = generate_definition_with_provider(
-            word=word,
-            provider_key=provider_key,
-        )
+        for current_hint in hint_attempts:
+            generated_definition = generate_definition_with_provider(
+                word=word,
+                provider_key=provider_key,
+                russian_hint=current_hint,
+            )
 
-        if not isinstance(generated_definition, str):
-            continue
+            if not isinstance(generated_definition, str):
+                continue
 
-        cleaned_definition = clean_definition_text(generated_definition)
+            cleaned_definition = clean_definition_text(generated_definition)
 
-        if is_quality_definition(cleaned_definition):
-            return cleaned_definition
+            if is_quality_definition(cleaned_definition):
+                return cleaned_definition
 
     return None
 
 
-def get_definition_for_word(word, provider_override=None):
+def get_definition_for_word(word, provider_override=None, russian_hint=None):
     """Return one definition via selected provider."""
     normalized_word = normalize_word(word)
+    normalized_russian_hint = normalize_word(russian_hint) if russian_hint else None
 
     if not normalized_word:
         return None
@@ -88,6 +96,7 @@ def get_definition_for_word(word, provider_override=None):
     return get_definition_from_provider(
         normalized_word,
         provider_override=provider_override,
+        russian_hint=normalized_russian_hint,
     )
 
 
