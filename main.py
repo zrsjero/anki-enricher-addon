@@ -1,5 +1,5 @@
 """Anki add-on entrypoint and UI menu registration."""
-
+import sys
 from aqt import mw
 from aqt.qt import (
     QAction,
@@ -132,6 +132,7 @@ def on_menu_click() -> None:
 
 def init_addon() -> None:
     """Register the add-on action in Anki Tools menu."""
+    print(sys.executable)
     action = QAction("English Note Enricher", mw)
     action.triggered.connect(on_menu_click)
     mw.form.menuTools.addAction(action)

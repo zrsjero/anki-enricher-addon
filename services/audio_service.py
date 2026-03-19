@@ -2,7 +2,15 @@
 
 import re
 
-from .config_service import get_audio_prefix, get_audio_backend
+from .config_service import (
+    get_audio_prefix,
+    get_audio_backend,
+    get_edge_tts_voice,
+    get_edge_tts_rate,
+    get_edge_tts_volume,
+    get_edge_tts_pitch,
+)
+from ..providers.edge_tts_audio_provider import generate_audio_data_with_edge_tts
 from ..providers.macos_say_audio_provider import generate_audio_data_with_say
 
 
@@ -28,6 +36,9 @@ def get_audio_extension():
 
     if backend == "macos_say":
         return "aiff"
+
+    if backend == "edge_tts":
+        return "mp3"
 
     return "mp3"
 
@@ -69,6 +80,15 @@ def generate_audio_data(word):
         return None
 
     backend = get_audio_backend()
+
+    if backend == "edge_tts":
+        return generate_audio_data_with_edge_tts(
+            normalized_word,
+            voice=get_edge_tts_voice(),
+            rate=get_edge_tts_rate(),
+            volume=get_edge_tts_volume(),
+            pitch=get_edge_tts_pitch(),
+        )
 
     if backend == "macos_say":
         return generate_audio_data_with_say(normalized_word)

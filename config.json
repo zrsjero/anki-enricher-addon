@@ -19,6 +19,12 @@
     "timeout_seconds": 25,
     "temperature": 0.6
   },
+  "edge_tts": {
+    "voice": "en-US-AriaNeural",
+    "rate": "+0%",
+    "volume": "+0%",
+    "pitch": "+0Hz"
+  },
   "audio_prefix": "jeeng",
-  "audio_backend": "macos_say"
+  "audio_backend": "edge_tts"
 }

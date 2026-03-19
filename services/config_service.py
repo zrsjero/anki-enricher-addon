@@ -110,4 +110,39 @@ def get_audio_prefix():
 def get_audio_backend():
     """Return active audio backend identifier."""
     config = get_addon_config()
-    return config.get("audio_backend", "macos_say")
+    return config.get("audio_backend", "edge_tts")
+
+
+def get_edge_tts_config():
+    """Return raw Edge TTS-related config section."""
+    config = get_addon_config()
+    edge_tts_config = config.get("edge_tts", {})
+
+    if not isinstance(edge_tts_config, dict):
+        return {}
+
+    return edge_tts_config
+
+
+def get_edge_tts_voice():
+    """Return Edge TTS voice identifier."""
+    edge_tts_config = get_edge_tts_config()
+    return edge_tts_config.get("voice", "en-US-AriaNeural")
+
+
+def get_edge_tts_rate():
+    """Return Edge TTS speaking rate string."""
+    edge_tts_config = get_edge_tts_config()
+    return edge_tts_config.get("rate", "+0%")
+
+
+def get_edge_tts_volume():
+    """Return Edge TTS volume string."""
+    edge_tts_config = get_edge_tts_config()
+    return edge_tts_config.get("volume", "+0%")
+
+
+def get_edge_tts_pitch():
+    """Return Edge TTS pitch string."""
+    edge_tts_config = get_edge_tts_config()
+    return edge_tts_config.get("pitch", "+0Hz")
